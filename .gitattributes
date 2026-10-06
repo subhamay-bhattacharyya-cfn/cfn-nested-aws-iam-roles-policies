@@ -1,0 +1,31 @@
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# CloudFormation & Infrastructure as Code
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+
+# Documentation
+*.md text eol=lf
+README* text eol=lf
+CHANGELOG* text eol=lf
+LICENSE* text eol=lf
+
+# Scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# JavaScript/Node
+*.js text eol=lf
+*.ts text eol=lf
+*.mjs text eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
+
+# Git configuration
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# GitHub workflows
+.github/ text eol=lf

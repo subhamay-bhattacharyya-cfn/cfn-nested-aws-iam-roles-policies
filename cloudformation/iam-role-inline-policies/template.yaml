@@ -8,7 +8,6 @@ Metadata:
           default: "Role Configuration"
         Parameters:
           - ProjectName
-          - RoleType
           - RoleName
           - Environment
           - AssumeRolePrincipal
@@ -16,17 +15,26 @@ Metadata:
       - Label:
           default: "Data Pipeline Permissions"
         Parameters:
-          - EnableS3Policy
+          - EnableS3ReadOnlyPolicy
           - EnableS3WritePolicy
           - EnableS3ReadWritePolicy
           - EnableKinesisPolicy
-          - EnableDynamoDBPolicy
+          - EnableDynamoDBReadOnlyPolicy
+          - EnableDynamoDBReadWritePolicy
           - EnableGluePolicy
           - EnableAthenaPolicy
+      - Label:
+          default: "AI/ML Services"
+        Parameters:
+          - EnableTextractPolicy
+          - EnablePollyPolicy
+          - EnableLexPolicy
+          - EnableRekognitionPolicy
       - Label:
           default: "Compute & Orchestration Permissions"
         Parameters:
           - EnableLambdaPolicy
+          - EnableLambdaBasicExecutionPolicy
           - EnableStepFunctionsPolicy
           - EnableECSPolicy
           - EnableCodeBuildPolicy
@@ -35,6 +43,7 @@ Metadata:
         Parameters:
           - EnableSQSPolicy
           - EnableSNSPolicy
+          - EnableSESPolicy
           - EnableEventBridgePolicy
           - EnableAPIGatewayPolicy
       - Label:
@@ -58,21 +67,6 @@ Parameters:
     Default: 'cfn-nested'
     AllowedPattern: '^[a-zA-Z0-9-]{1,64}$'
     Description: Project name used as prefix for role naming
-
-  RoleType:
-    Type: String
-    Default: 'DataPipeline'
-    AllowedValues:
-      - DataPipeline
-      - LambdaFunction
-      - EC2Instance
-      - ECSTask
-      - StepFunctions
-      - DataScience
-      - APIBackend
-      - EventProcessor
-      - Custom
-    Description: Predefined role type with common permission sets
 
   RoleName:
     Type: String
@@ -110,7 +104,7 @@ Parameters:
     Description: Optional suffix for CI/CD deployments (e.g., for unique role identification in testing)
 
   # Data Pipeline Policies
-  EnableS3Policy:
+  EnableS3ReadOnlyPolicy:
     Type: String
     Default: 'false'
     AllowedValues: ['true', 'false']
@@ -134,11 +128,17 @@ Parameters:
     AllowedValues: ['true', 'false']
     Description: Kinesis data streams access (for real-time pipelines)
 
-  EnableDynamoDBPolicy:
+  EnableDynamoDBReadOnlyPolicy:
     Type: String
     Default: 'false'
     AllowedValues: ['true', 'false']
-    Description: DynamoDB CRUD operations
+    Description: DynamoDB read-only access (GetItem, Query, Scan, BatchGetItem)
+
+  EnableDynamoDBReadWritePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: DynamoDB read-write access (full CRUD operations)
 
   EnableGluePolicy:
     Type: String
@@ -152,12 +152,43 @@ Parameters:
     AllowedValues: ['true', 'false']
     Description: Athena query execution and result storage
 
+  # AI/ML Services
+  EnableTextractPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Textract document analysis access
+
+  EnablePollyPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Polly text-to-speech synthesis
+
+  EnableLexPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Lex conversational interfaces
+
+  EnableRekognitionPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Rekognition image and video analysis
+
   # Compute & Orchestration
   EnableLambdaPolicy:
     Type: String
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: Lambda function invocation
+
+  EnableLambdaBasicExecutionPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: AWS Lambda Basic Execution Role - CloudWatch Logs permissions for Lambda functions
 
   EnableStepFunctionsPolicy:
     Type: String
@@ -189,6 +220,12 @@ Parameters:
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: SNS topic publish
+
+  EnableSESPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon SES email sending and configuration
 
   EnableEventBridgePolicy:
     Type: String
@@ -296,10 +333,20 @@ Parameters:
     Default: 'arn:aws:s3:::aws-athena-query-results-*/*'
     Description: S3 bucket ARN for Athena query results
 
+  LambdaFunctionName:
+    Type: String
+    Default: ''
+    Description: Lambda function name (used for naming and log group identification)
+
   LambdaFunctionArn:
     Type: String
     Default: 'arn:aws:lambda:*:*:function/*'
     Description: Lambda function ARN pattern
+
+  LambdaBasicExecutionLogGroupArn:
+    Type: String
+    Default: 'arn:aws:logs:*:*:log-group:/aws/lambda/*'
+    Description: CloudWatch log group ARN pattern for Lambda basic execution role
 
   StepFunctionsStateMachineArn:
     Type: String
@@ -369,18 +416,27 @@ Parameters:
 
 Conditions:
   HasCiSuffix: !Not [!Equals [!Ref CiSuffix, '']]
+  HasLambdaFunctionName: !Not [!Equals [!Ref LambdaFunctionName, '']]
 
   # Data Pipeline
-  CreateS3Policy: !Equals [!Ref EnableS3Policy, 'true']
+  CreateS3ReadOnlyPolicy: !Equals [!Ref EnableS3ReadOnlyPolicy, 'true']
   CreateS3WritePolicy: !Equals [!Ref EnableS3WritePolicy, 'true']
   CreateS3ReadWritePolicy: !Equals [!Ref EnableS3ReadWritePolicy, 'true']
   CreateKinesisPolicy: !Equals [!Ref EnableKinesisPolicy, 'true']
-  CreateDynamoDBPolicy: !Equals [!Ref EnableDynamoDBPolicy, 'true']
+  CreateDynamoDBReadOnlyPolicy: !Equals [!Ref EnableDynamoDBReadOnlyPolicy, 'true']
+  CreateDynamoDBReadWritePolicy: !Equals [!Ref EnableDynamoDBReadWritePolicy, 'true']
   CreateGluePolicy: !Equals [!Ref EnableGluePolicy, 'true']
   CreateAthenaPolicy: !Equals [!Ref EnableAthenaPolicy, 'true']
 
+  # AI/ML Services
+  CreateTextractPolicy: !Equals [!Ref EnableTextractPolicy, 'true']
+  CreatePollyPolicy: !Equals [!Ref EnablePollyPolicy, 'true']
+  CreateLexPolicy: !Equals [!Ref EnableLexPolicy, 'true']
+  CreateRekognitionPolicy: !Equals [!Ref EnableRekognitionPolicy, 'true']
+
   # Compute & Orchestration
   CreateLambdaPolicy: !Equals [!Ref EnableLambdaPolicy, 'true']
+  CreateLambdaBasicExecutionPolicy: !Equals [!Ref EnableLambdaBasicExecutionPolicy, 'true']
   CreateStepFunctionsPolicy: !Equals [!Ref EnableStepFunctionsPolicy, 'true']
   CreateECSPolicy: !Equals [!Ref EnableECSPolicy, 'true']
   CreateCodeBuildPolicy: !Equals [!Ref EnableCodeBuildPolicy, 'true']
@@ -388,6 +444,7 @@ Conditions:
   # Integration & Messaging
   CreateSQSPolicy: !Equals [!Ref EnableSQSPolicy, 'true']
   CreateSNSPolicy: !Equals [!Ref EnableSNSPolicy, 'true']
+  CreateSESPolicy: !Equals [!Ref EnableSESPolicy, 'true']
   CreateEventBridgePolicy: !Equals [!Ref EnableEventBridgePolicy, 'true']
   CreateAPIGatewayPolicy: !Equals [!Ref EnableAPIGatewayPolicy, 'true']
 
@@ -429,13 +486,13 @@ Resources:
             Principal:
               Service: !Ref AssumeRolePrincipal
             Action: sts:AssumeRole
-      Description: !Sub 'Role for ${RoleType} in ${Environment} environment'
+      Description: !Sub 'Parameterized IAM role for ${Environment} environment - permissions controlled via parameters'
       MaxSessionDuration: 3600
       Tags:
         - Key: Environment
           Value: !Ref Environment
-        - Key: RoleType
-          Value: !Ref RoleType
+        - Key: Principal
+          Value: !Ref AssumeRolePrincipal
         - Key: ManagedBy
           Value: CloudFormation
         - Key: Project
@@ -443,7 +500,7 @@ Resources:
       Policies:
         # ============= DATA PIPELINE POLICIES =============
         - !If
-          - CreateS3Policy
+          - CreateS3ReadOnlyPolicy
           - PolicyName: S3ReadOnlyPolicy
             PolicyDocument:
               Version: '2012-10-17'
@@ -451,15 +508,18 @@ Resources:
                 - Sid: S3BucketOperations
                   Effect: Allow
                   Action:
-                    - s3:GetObject
-                    - s3:PutObject
-                    - s3:DeleteObject
                     - s3:ListBucket
                     - s3:GetBucketLocation
                     - s3:ListBucketVersions
-                    - s3:GetObjectVersion
                   Resource:
                     - !Ref S3BucketArn
+                - Sid: S3ObjectOperations
+                  Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:GetObjectVersion
+                  Resource:
+                    - !Sub '${S3BucketArn}/*'
                 - Sid: S3ListAllBuckets
                   Effect: Allow
                   Action:
@@ -538,8 +598,28 @@ Resources:
           - !Ref AWS::NoValue
 
         - !If
-          - CreateDynamoDBPolicy
-          - PolicyName: DynamoDBPolicy
+          - CreateDynamoDBReadOnlyPolicy
+          - PolicyName: DynamoDBReadOnlyPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:GetItem
+                    - dynamodb:Query
+                    - dynamodb:Scan
+                    - dynamodb:BatchGetItem
+                  Resource:
+                    - !Ref DynamoDBTableArn
+                - Effect: Allow
+                  Action:
+                    - dynamodb:ListTables
+                  Resource: '*'
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateDynamoDBReadWritePolicy
+          - PolicyName: DynamoDBReadWritePolicy
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
@@ -608,6 +688,83 @@ Resources:
                     - !Ref AthenaQueryResultsArn
           - !Ref AWS::NoValue
 
+        # ============= AI/ML SERVICES POLICIES =============
+        - !If
+          - CreateTextractPolicy
+          - PolicyName: TextractPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - textract:AnalyzeDocument
+                    - textract:DetectDocumentText
+                    - textract:StartDocumentAnalysis
+                    - textract:StartDocumentTextDetection
+                    - textract:GetDocumentAnalysis
+                    - textract:GetDocumentTextDetection
+                  Resource: '*'
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreatePollyPolicy
+          - PolicyName: PollyPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - polly:SynthesizeSpeech
+                    - polly:DescribeVoices
+                    - polly:GetSpeechSynthesisTask
+                    - polly:ListSpeechSynthesisTasks
+                    - polly:StartSpeechSynthesisTask
+                  Resource: '*'
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateLexPolicy
+          - PolicyName: LexPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - lex:PostText
+                    - lex:PostContent
+                    - lex:GetSession
+                    - lex:PutSession
+                    - lex:DeleteSession
+                    - lex:RecognizeText
+                    - lex:RecognizeUtterance
+                    - lex:StartConversation
+                  Resource: '*'
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateRekognitionPolicy
+          - PolicyName: RekognitionPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - rekognition:DetectLabels
+                    - rekognition:DetectFaces
+                    - rekognition:DetectText
+                    - rekognition:SearchFacesByImage
+                    - rekognition:SearchFaces
+                    - rekognition:CompareFaces
+                    - rekognition:DetectModerationLabels
+                    - rekognition:GetLabelDetection
+                    - rekognition:GetFaceDetection
+                    - rekognition:GetContentModeration
+                    - rekognition:StartLabelDetection
+                    - rekognition:StartFaceDetection
+                    - rekognition:StartContentModeration
+                  Resource: '*'
+          - !Ref AWS::NoValue
+
         # ============= COMPUTE & ORCHESTRATION POLICIES =============
         - !If
           - CreateLambdaPolicy
@@ -620,6 +777,23 @@ Resources:
                     - lambda:InvokeFunction
                     - lambda:InvokeAsync
                   Resource: !Ref LambdaFunctionArn
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateLambdaBasicExecutionPolicy
+          - PolicyName: LambdaBasicExecutionPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: !If
+                    - HasLambdaFunctionName
+                    - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*'
+                    - !Sub '${LambdaBasicExecutionLogGroupArn}'
           - !Ref AWS::NoValue
 
         - !If
@@ -701,6 +875,40 @@ Resources:
                   Action:
                     - sns:Publish
                   Resource: !Ref SNSTopicArn
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateSESPolicy
+          - PolicyName: SESPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - ses:SendEmail
+                    - ses:SendRawEmail
+                    - ses:SendTemplatedEmail
+                    - ses:SendBulkTemplatedEmail
+                    - ses:SendBounce
+                    - ses:SendCustomVerificationEmail
+                    - ses:GetSendStatistics
+                    - ses:GetSendQuota
+                    - ses:GetAccount
+                    - ses:GetAccountSendingEnabled
+                    - ses:ListVerifiedEmailAddresses
+                    - ses:ListIdentities
+                    - ses:ListEmailTemplates
+                    - ses:GetEmailIdentity
+                    - ses:GetTemplate
+                    - ses:VerifyEmailIdentity
+                    - ses:VerifyEmailAddress
+                    - ses:DeleteVerifiedEmailAddress
+                    - ses:GetIdentityNotificationAttributes
+                    - ses:SetIdentityNotificationTopic
+                    - ses:PutEmailIdentityFeedbackAttributes
+                    - ses:PutEmailIdentityMailFromAttributes
+                    - ses:PutConfigurationSetSendingOptions
+                  Resource: '*'
           - !Ref AWS::NoValue
 
         - !If
@@ -860,6 +1068,6 @@ Outputs:
     Description: Deployment summary
     Value: !Sub |
       Role: ${IAMRole}
-      Type: ${RoleType}
       Environment: ${Environment}
       Principal: ${AssumeRolePrincipal}
+      AssumeRoleCommand: aws sts assume-role --role-arn ${IAMRole.Arn} --role-session-name iam-session

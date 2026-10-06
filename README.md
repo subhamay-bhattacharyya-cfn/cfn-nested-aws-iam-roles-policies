@@ -1,4 +1,4 @@
-# CloudFormation S3 Template Repository
+# CloudFormation Nested AWS Templates Repository
 
 <!-- Row 1: Status - Most Important -->
 [![Release](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/actions/workflows/release.yaml/badge.svg)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/issues)&nbsp;[![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/commits)
@@ -15,24 +15,46 @@
 <!-- Row 5: Custom Metrics -->
 [![Custom Endpoint](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/f55f73ac88992d4bd5c9835ee5fd70b6/raw/aws-vpc-cloudformation-fundamentals.json)](https://gist.github.com/subhamay-bhattacharyya/f55f73ac88992d4bd5c9835ee5fd70b6)
 
-This repository contains nested CloudFormation templates for deploying S3 buckets with security best practices and optional policy enforcement.
+This repository contains reusable nested CloudFormation templates for deploying AWS resources with security best practices. Currently includes IAM roles with conditional inline policies and S3 buckets with optional policy enforcement.
 
 ## Overview
 
-This is a **nested stack template** designed to be invoked from a parent/root CloudFormation stack. Templates are stored in this repository and should be uploaded to an S3 bucket for reference by parent stacks.
+This is a collection of **nested stack templates** designed to be invoked from a parent/root CloudFormation stack. Templates are modular, parameterized, and follow AWS best practices for security, naming conventions, and resource management. Templates should be uploaded to an S3 bucket for reference by parent stacks.
 
 ## Template Files
 
 ### CloudFormation Templates
+
+#### IAM Role Templates
+
+- **`cloudformation/iam-role-inline-policies/template.yaml`** — Parameterized IAM role with conditional inline policies for common AWS use cases (data pipelines, compute, ML services, messaging, security, cross-account access)
+
+#### S3 Bucket Templates
 
 - **`templates/s3-bucket.yaml`** — Nested template for S3 bucket creation (versioning, public access blocking)
 - **`templates/s3-bucket-policy.yaml`** — Optional nested template for S3 bucket policy (encryption enforcement, secure transport)
 
 ### Parameter Files
 
-- **`parameters/parameters.json`** — Parameter values for development environment
+- **`cloudformation/iam-role-inline-policies/parameters.json`** — Parameter values for IAM role deployment
+- **`cloudformation/iam-role-inline-policies/stack-config.json`** — Stack configuration
+- **`parameters/parameters.json`** — Parameter values for S3 bucket deployment
 
 ## Template Features
+
+### IAM Role Template (iam-role-inline-policies/template.yaml)
+
+- ✅ Parameterized role naming with project prefix, environment, and region
+- ✅ Optional CI suffix support for unique role identification
+- ✅ Configurable assume role principal (Lambda, EC2, ECS, Step Functions, Glue, CodeBuild, SSM, EventBridge, DataPipeline)
+- ✅ **Data Pipeline Policies:** S3 (read-only, write-only, read-write), Kinesis, DynamoDB (read-only, read-write), Glue, Athena
+- ✅ **AI/ML Services:** Textract, Polly, Lex, Rekognition
+- ✅ **Compute & Orchestration:** Lambda, Lambda Basic Execution, Step Functions, ECS, CodeBuild
+- ✅ **Integration & Messaging:** SQS, SNS, SES, EventBridge, API Gateway
+- ✅ **Security & Observability:** Secrets Manager, CloudWatch Logs, X-Ray, CloudTrail
+- ✅ **Advanced Features:** KMS key operations, cross-account access, resource tagging
+- ✅ Conditional inline policies (enable/disable individual policies via parameters)
+- ✅ CloudFormation exports for cross-stack references
 
 ### S3 Bucket Template (s3-bucket.yaml)
 
@@ -48,6 +70,83 @@ This is a **nested stack template** designed to be invoked from a parent/root Cl
 - ✅ Optional/conditional policy rules
 
 ## Parameters
+
+### IAM Role Parameters (iam-role-inline-policies/template.yaml)
+
+#### Basic Configuration
+
+| Parameter | Type | Default | Description |
+| ----------- | ------ | --------- | ------------- |
+| `ProjectName` | String | `cfn-nested` | Project name used as prefix for role naming |
+| `RoleName` | String | `iam-role` | Name of the IAM role |
+| `Environment` | String | `devl` | Deployment environment (devl, test, prod) |
+| `AssumeRolePrincipal` | String | `lambda.amazonaws.com` | AWS service principal that can assume this role |
+| `CiSuffix` | String | `""` | Optional CI suffix for unique role identification |
+
+#### Feature Enable/Disable Flags
+
+**Data Pipeline Policies:**
+
+- `EnableS3ReadOnlyPolicy` (default: false) — S3 read-only access
+- `EnableS3WritePolicy` (default: false) — S3 write-only access
+- `EnableS3ReadWritePolicy` (default: false) — S3 read-write access
+- `EnableKinesisPolicy` (default: false) — Kinesis data streams
+- `EnableDynamoDBReadOnlyPolicy` (default: false) — DynamoDB read-only
+- `EnableDynamoDBReadWritePolicy` (default: false) — DynamoDB read-write
+- `EnableGluePolicy` (default: false) — AWS Glue ETL
+- `EnableAthenaPolicy` (default: false) — Amazon Athena queries
+
+**AI/ML Services:**
+
+- `EnableTextractPolicy` (default: false) — Amazon Textract
+- `EnablePollyPolicy` (default: false) — Amazon Polly
+- `EnableLexPolicy` (default: false) — Amazon Lex
+- `EnableRekognitionPolicy` (default: false) — Amazon Rekognition
+
+**Compute & Orchestration:**
+
+- `EnableLambdaPolicy` (default: false) — Lambda function invocation
+- `EnableLambdaBasicExecutionPolicy` (default: false) — Lambda CloudWatch Logs
+- `EnableStepFunctionsPolicy` (default: false) — Step Functions
+- `EnableECSPolicy` (default: false) — ECS task management
+- `EnableCodeBuildPolicy` (default: false) — CodeBuild
+
+**Integration & Messaging:**
+
+- `EnableSQSPolicy` (default: false) — SQS queue operations
+- `EnableSNSPolicy` (default: false) — SNS topic publish
+- `EnableSESPolicy` (default: false) — Amazon SES
+- `EnableEventBridgePolicy` (default: false) — EventBridge
+- `EnableAPIGatewayPolicy` (default: false) — API Gateway logging
+
+**Security & Observability:**
+
+- `EnableSecretsManagerPolicy` (default: false) — Secrets Manager
+- `EnableCloudWatchPolicy` (default: false) — CloudWatch Logs and metrics
+- `EnableXRayPolicy` (default: false) — AWS X-Ray
+- `EnableCloudTrailPolicy` (default: false) — CloudTrail logs
+
+**Advanced Features:**
+
+- `EnableCrossAccountAccess` (default: false) — Cross-account role assumption
+- `EnableKMSPolicy` (default: false) — KMS key operations
+- `EnableTagging` (default: false) — Resource tagging
+
+#### Resource ARN Parameters
+
+| Parameter | Default | Description |
+| ----------- | --------- | ------------- |
+| `S3BucketArn` | `arn:aws:s3:::test-bucket-us-east-1` | S3 bucket ARN |
+| `KinesisStreamArn` | `arn:aws:kinesis:*:*:stream/*` | Kinesis stream ARN pattern |
+| `DynamoDBTableArn` | `arn:aws:dynamodb:*:*:table/*` | DynamoDB table ARN pattern |
+| `GlueJobArn`, `GlueCatalogArn`, `GlueDatabaseArn`, `GlueTableArn` | Glue defaults | Glue resource ARN patterns |
+| `AthenaWorkgroupArn`, `AthenaQueryResultsArn` | Athena defaults | Athena resource ARN patterns |
+| `LambdaFunctionArn`, `LambdaBasicExecutionLogGroupArn` | Lambda defaults | Lambda resource ARN patterns |
+| `StepFunctionsStateMachineArn`, `StepFunctionsExecutionArn` | Step Functions defaults | Step Functions resource ARN patterns |
+| `ECSTaskArn`, `ECSTaskDefinitionArn` | ECS defaults | ECS resource ARN patterns |
+| `SQSQueueArn`, `SNSTopicArn` | MQ defaults | SQS/SNS resource ARN patterns |
+| `SecretsManagerArn`, `CloudWatchLogsArn`, `KMSKeyArn` | Default patterns | Security/Observability resource ARN patterns |
+| `CrossAccountRoleArn` | `arn:aws:iam::*:role/*` | Cross-account IAM role ARN pattern |
 
 ### S3 Bucket Parameters
 
@@ -79,6 +178,14 @@ This is a **nested stack template** designed to be invoked from a parent/root Cl
 
 ## Outputs
 
+### IAM Role Template Outputs
+
+- `RoleArn` — ARN of the created IAM role (exported for cross-stack reference)
+- `RoleName` — Name of the created IAM role (exported for cross-stack reference)
+- `AssumeRoleCommand` — AWS CLI command to assume the role
+- `CloudFormationStackId` — CloudFormation stack ID
+- `DeploymentInfo` — Deployment summary including role, environment, principal, and assume role command
+
 ### S3 Bucket Template Outputs
 
 - `S3BucketName` — S3 bucket name
@@ -90,6 +197,75 @@ This is a **nested stack template** designed to be invoked from a parent/root Cl
 - `PolicyStatus` — Policy application status (Applied)
 
 ## Usage
+
+### IAM Role Deployment
+
+#### Basic Deployment (Lambda Execution Role with CloudWatch Logs)
+
+```bash
+aws cloudformation create-stack \
+  --stack-name my-lambda-role \
+  --template-body file://cloudformation/iam-role-inline-policies/template.yaml \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=myproject \
+    ParameterKey=RoleName,ParameterValue=lambda-executor \
+    ParameterKey=Environment,ParameterValue=devl \
+    ParameterKey=AssumeRolePrincipal,ParameterValue=lambda.amazonaws.com \
+    ParameterKey=EnableLambdaPolicy,ParameterValue=true \
+    ParameterKey=EnableLambdaBasicExecutionPolicy,ParameterValue=true \
+    ParameterKey=EnableCloudWatchPolicy,ParameterValue=true \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+#### Data Pipeline Role (S3 + Glue + Athena Access)
+
+```bash
+aws cloudformation create-stack \
+  --stack-name my-data-pipeline-role \
+  --template-body file://cloudformation/iam-role-inline-policies/template.yaml \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=myproject \
+    ParameterKey=RoleName,ParameterValue=data-pipeline \
+    ParameterKey=Environment,ParameterValue=prod \
+    ParameterKey=AssumeRolePrincipal,ParameterValue=glue.amazonaws.com \
+    ParameterKey=EnableS3ReadWritePolicy,ParameterValue=true \
+    ParameterKey=EnableGluePolicy,ParameterValue=true \
+    ParameterKey=EnableAthenaPolicy,ParameterValue=true \
+    ParameterKey=S3BucketArn,ParameterValue=arn:aws:s3:::my-data-bucket \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+#### With CI Suffix (for CI/CD Deployments)
+
+```bash
+aws cloudformation create-stack \
+  --stack-name my-role-ci \
+  --template-body file://cloudformation/iam-role-inline-policies/template.yaml \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=myproject \
+    ParameterKey=RoleName,ParameterValue=lambda-executor \
+    ParameterKey=Environment,ParameterValue=devl \
+    ParameterKey=CiSuffix,ParameterValue=$CI_PIPELINE_ID \
+    ParameterKey=EnableLambdaPolicy,ParameterValue=true \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+#### Stack Update
+
+```bash
+aws cloudformation update-stack \
+  --stack-name my-lambda-role \
+  --template-body file://cloudformation/iam-role-inline-policies/template.yaml \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=myproject \
+    ParameterKey=RoleName,ParameterValue=lambda-executor \
+    ParameterKey=Environment,ParameterValue=devl \
+    ParameterKey=AssumeRolePrincipal,ParameterValue=lambda.amazonaws.com \
+    ParameterKey=EnableCloudWatchPolicy,ParameterValue=true \
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+### S3 Bucket Deployment
 
 ### 1. Upload Templates to S3
 
@@ -235,6 +411,18 @@ Example: `myproject-cfn-bucket-123456789012-devl-us-east-1`
 Example: `myproject-cfn-bucket-123456789012-devl-us-east-1-pipeline-12345`
 
 ## Best Practices Implemented
+
+### IAM Role Best Practices
+
+- ✅ Principle of least privilege with conditional inline policies
+- ✅ Parameterized role naming with project prefix, environment, and region
+- ✅ Optional CI suffix support for unique role identification in testing
+- ✅ Resource ARN parameters for fine-grained access control
+- ✅ CloudFormation exports for cross-stack references
+- ✅ Organized policy categories (data pipeline, AI/ML, compute, messaging, security, observability)
+- ✅ Metadata documentation within CloudFormation template
+
+### S3 Bucket Best Practices
 
 - ✅ Versioning enabled by default
 - ✅ Public access blocked by default
