@@ -33,7 +33,7 @@ Metadata:
       - Label:
           default: "Bedrock Knowledge Base"
         Parameters:
-          - EnableBedrockKnowledgeBasePolicy
+          - EnableBedrockRAGAccessPolicy
           - BedrockKnowledgeBaseArn
           - BedrockEmbeddingModelArn
           - KnowledgeBaseCollectionArn
@@ -185,11 +185,11 @@ Parameters:
     AllowedValues: ['true', 'false']
     Description: Amazon Rekognition image and video analysis
 
-  EnableBedrockKnowledgeBasePolicy:
+  EnableBedrockRAGAccessPolicy:
     Type: String
     Default: 'false'
     AllowedValues: ['true', 'false']
-    Description: Bedrock knowledge base access (embedding model and OpenSearch Serverless)
+    Description: Bedrock RAG (Retrieval-Augmented Generation) access (embedding model and OpenSearch Serverless)
 
   # Compute & Orchestration
   EnableLambdaPolicy:
@@ -462,7 +462,7 @@ Conditions:
   CreatePollyPolicy: !Equals [!Ref EnablePollyPolicy, 'true']
   CreateLexPolicy: !Equals [!Ref EnableLexPolicy, 'true']
   CreateRekognitionPolicy: !Equals [!Ref EnableRekognitionPolicy, 'true']
-  CreateBedrockKnowledgeBasePolicy: !Equals [!Ref EnableBedrockKnowledgeBasePolicy, 'true']
+  CreateBedrockRAGAccessPolicy: !Equals [!Ref EnableBedrockRAGAccessPolicy, 'true']
 
   # Compute & Orchestration
   CreateLambdaPolicy: !Equals [!Ref EnableLambdaPolicy, 'true']
@@ -796,24 +796,33 @@ Resources:
           - !Ref AWS::NoValue
 
         - !If
-          - CreateBedrockKnowledgeBasePolicy
-          - PolicyName: BedrockKnowledgeBasePolicy
+          - CreateBedrockRAGAccessPolicy
+          - PolicyName: BedrockAccessPolicy
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
-                - Effect: Allow
+                - Sid: BedrockRAGAccess
+                  Effect: Allow
                   Action:
+                    - bedrock:CreateKnowledgeBase
                     - bedrock:Retrieve
                     - bedrock:RetrieveAndGenerate
                   Resource: !Ref BedrockKnowledgeBaseArn
-                - Effect: Allow
+                - Sid: BedrockModelInvoke
+                  Effect: Allow
                   Action:
                     - bedrock:InvokeModel
                   Resource: !Ref BedrockEmbeddingModelArn
-                - Effect: Allow
+                - Sid: KnowledgeBaseCollectionAccess
+                  Effect: Allow
                   Action:
                     - aoss:APIAccessAll
                   Resource: !Ref KnowledgeBaseCollectionArn
+                - Sid: PassRoleAccess
+                  Effect: Allow
+                  Action:
+                    - iam:PassRole
+                  Resource: "*"
           - !Ref AWS::NoValue
 
         # ============= COMPUTE & ORCHESTRATION POLICIES =============
