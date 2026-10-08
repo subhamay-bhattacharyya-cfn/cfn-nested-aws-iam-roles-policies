@@ -102,6 +102,7 @@ This is a collection of **nested stack templates** designed to be invoked from a
 - `EnablePollyPolicy` (default: false) — Amazon Polly
 - `EnableLexPolicy` (default: false) — Amazon Lex
 - `EnableRekognitionPolicy` (default: false) — Amazon Rekognition
+- `EnableBedrockKnowledgeBasePolicy` (default: false) — Amazon Bedrock knowledge base Retrieve and RetrieveAndGenerate
 
 **Compute & Orchestration:**
 
@@ -147,6 +148,7 @@ This is a collection of **nested stack templates** designed to be invoked from a
 | `SQSQueueArn`, `SNSTopicArn` | MQ defaults | SQS/SNS resource ARN patterns |
 | `SecretsManagerArn`, `CloudWatchLogsArn`, `KMSKeyArn` | Default patterns | Security/Observability resource ARN patterns |
 | `CrossAccountRoleArn` | `arn:aws:iam::*:role/*` | Cross-account IAM role ARN pattern |
+| `BedrockKnowledgeBaseArn` | `arn:aws:bedrock:*:*:knowledge-base/*` | Bedrock knowledge base ARN pattern |
 
 ### S3 Bucket Parameters
 

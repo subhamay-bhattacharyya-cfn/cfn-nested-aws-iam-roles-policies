@@ -31,6 +31,13 @@ Metadata:
           - EnableLexPolicy
           - EnableRekognitionPolicy
       - Label:
+          default: "Bedrock Knowledge Base"
+        Parameters:
+          - EnableBedrockKnowledgeBasePolicy
+          - BedrockKnowledgeBaseArn
+          - BedrockEmbeddingModelArn
+          - KnowledgeBaseCollectionArn
+      - Label:
           default: "Compute & Orchestration Permissions"
         Parameters:
           - EnableLambdaPolicy
@@ -96,6 +103,7 @@ Parameters:
       - ssm.amazonaws.com
       - events.amazonaws.com
       - datapipeline.amazonaws.com
+      - bedrock-agentcore.amazonaws.com
     Description: AWS service that can assume this role
 
   CiSuffix:
@@ -176,6 +184,12 @@ Parameters:
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: Amazon Rekognition image and video analysis
+
+  EnableBedrockKnowledgeBasePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Bedrock knowledge base access (embedding model and OpenSearch Serverless)
 
   # Compute & Orchestration
   EnableLambdaPolicy:
@@ -414,6 +428,21 @@ Parameters:
     AllowedPattern: '^(arn:.+|\\*)$'
     Description: Cross-account IAM role ARN pattern (required if EnableCrossAccountAccess is true)
 
+  BedrockKnowledgeBaseArn:
+    Type: String
+    Default: 'arn:aws:bedrock:*:*:knowledge-base/*'
+    Description: Bedrock knowledge base ARN pattern
+
+  BedrockEmbeddingModelArn:
+    Type: String
+    Default: 'arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0'
+    Description: Bedrock embedding model ARN used by the knowledge base
+
+  KnowledgeBaseCollectionArn:
+    Type: String
+    Default: 'arn:aws:aoss:*:*:collection/*'
+    Description: OpenSearch Serverless collection ARN pattern
+
 Conditions:
   HasCiSuffix: !Not [!Equals [!Ref CiSuffix, '']]
   HasLambdaFunctionName: !Not [!Equals [!Ref LambdaFunctionName, '']]
@@ -433,6 +462,7 @@ Conditions:
   CreatePollyPolicy: !Equals [!Ref EnablePollyPolicy, 'true']
   CreateLexPolicy: !Equals [!Ref EnableLexPolicy, 'true']
   CreateRekognitionPolicy: !Equals [!Ref EnableRekognitionPolicy, 'true']
+  CreateBedrockKnowledgeBasePolicy: !Equals [!Ref EnableBedrockKnowledgeBasePolicy, 'true']
 
   # Compute & Orchestration
   CreateLambdaPolicy: !Equals [!Ref EnableLambdaPolicy, 'true']
@@ -763,6 +793,27 @@ Resources:
                     - rekognition:StartFaceDetection
                     - rekognition:StartContentModeration
                   Resource: '*'
+          - !Ref AWS::NoValue
+
+        - !If
+          - CreateBedrockKnowledgeBasePolicy
+          - PolicyName: BedrockKnowledgeBasePolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - bedrock:Retrieve
+                    - bedrock:RetrieveAndGenerate
+                  Resource: !Ref BedrockKnowledgeBaseArn
+                - Effect: Allow
+                  Action:
+                    - bedrock:InvokeModel
+                  Resource: !Ref BedrockEmbeddingModelArn
+                - Effect: Allow
+                  Action:
+                    - aoss:APIAccessAll
+                  Resource: !Ref KnowledgeBaseCollectionArn
           - !Ref AWS::NoValue
 
         # ============= COMPUTE & ORCHESTRATION POLICIES =============
