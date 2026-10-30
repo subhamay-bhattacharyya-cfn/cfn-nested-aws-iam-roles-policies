@@ -3,17 +3,17 @@ description: CI Build Workflow for CloudFormation IAM Role Inline Policies run b
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - feature/**
-  #     - bug/**
-  #   paths:
-  #     - 'cloudformation/iam-role-inline-policies/**'
-  #     - .github/workflows/ci.yaml
-  # pull_request:
-  #   branches: [main]
-  #   paths:
-  #     - 'cloudformation/iam-role-inline-policies/**'
+  push:
+    branches:
+      - feature/**
+      - bug/**
+    paths:
+      - 'cloudformation/iam-role-inline-policies/**'
+      - .github/workflows/ci.yaml
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cloudformation/iam-role-inline-policies/**'
 
 permissions:
   actions: write
