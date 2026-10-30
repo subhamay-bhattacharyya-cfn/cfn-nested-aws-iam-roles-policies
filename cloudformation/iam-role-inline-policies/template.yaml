@@ -622,6 +622,7 @@ Resources:
                     - kinesis:GetRecords
                     - kinesis:GetShardIterator
                     - kinesis:DescribeStream
+                    - kinesis:DescribeStreamSummary
                     - kinesis:ListStreams
                     - kinesis:ListShards
                   Resource: !Ref KinesisStreamArn
