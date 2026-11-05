@@ -4,36 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a **CloudFormation template repository** that provides reusable nested stack templates for deploying S3 buckets with security best practices. Templates follow the nested stack pattern and are designed to be referenced by parent CloudFormation stacks.
+This is a **CloudFormation template repository** that provides a reusable nested stack template for creating an IAM role with conditionally attached managed policies for common AWS use cases. The template is designed to be referenced by parent CloudFormation stacks.
 
 **Key characteristics:**
 
-- Nested CloudFormation templates (referenced via `TemplateURL`)
-- Parameterized bucket naming with account ID, environment, and region
-- S3 security defaults: versioning enabled, public access blocked
-- Optional S3 bucket policy enforcement (encryption, secure transport)
+- Nested CloudFormation template (referenced via `TemplateURL`)
+- One IAM role plus one `AWS::IAM::ManagedPolicy` per capability, each enabled by a `true`/`false` parameter
+- Parameterized role naming with project, role, environment, region, and optional CI suffix
 - Automated semantic versioning and releases
 - AWS OIDC authentication for CI/CD deployments
 
 ## Project Structure
 
 ```text
-templates/
-├── s3-bucket.yaml                # Nested template: S3 bucket creation
-└── s3-bucket-policy.yaml         # Nested template: S3 bucket policy
-
-parameters/
-├── dev.json                       # Parameters for development environment
-├── staging.json                   # Parameters for staging environment
-├── prod.json                      # Parameters for production environment
-├── policy-dev.json                # Bucket policy parameters (development)
-├── policy-staging.json            # Bucket policy parameters (staging)
-└── policy-prod.json               # Bucket policy parameters (production)
+cloudformation/
+├── template.yaml                  # IAM role with conditional managed policies
+├── parameters.json                # Parameter values for deployment
+└── stack-config.json              # Stack name plus template and parameter file paths
 
 .github/workflows/
-├── ci.yaml                        # Validates, deploys, and cleans up templates
+├── ci.yaml                        # CI build workflow (validate and deploy the template)
 ├── release.yaml                   # Semantic release on push to main
-└── create-branch.yaml             # Auto-create feature branches from issues
+├── create-branch.yaml             # Auto-create feature branches from issues
+├── claude.yaml                    # Claude Code workflow
+├── claude-code-review.yaml        # Claude Code review workflow
+├── notify.yaml                    # Slack notification workflow
+└── setup-environments.yaml        # AWS environment setup
 
 scripts/plugins/
 ├── release.config.js              # Semantic-release configuration
@@ -76,89 +72,89 @@ Select `feat`, `fix`, or `chore` type. Only `feat` and `fix` trigger releases.
 
 ### Nested Stack Pattern
 
-This repo provides **nested stack templates** — templates that are referenced from parent/root CloudFormation stacks via `TemplateURL`. The templates are self-contained and export outputs for cross-stack references.
+The template is referenced from parent/root CloudFormation stacks via `TemplateURL`. Parents retrieve its outputs with `!GetAtt NestedStack.Outputs.OutputKey`. The template exports `RoleArn` and `RoleName` for cross-stack references.
 
-- **Parent stack** calls: `AWS::CloudFormation::Stack` with `TemplateURL` pointing to S3
-- **Nested templates** output values via `Outputs` section with `Export`
-- Parent retrieves outputs via `!GetAtt NestedStack.Outputs.OutputKey`
-
-### Bucket Naming Convention
-
-Bucket names follow a deterministic pattern driven by parameters:
+### Role Naming Convention
 
 ```bash
-{ProjectName}-{BucketBaseName}-{AccountId}-{Environment}-{Region}[-{CiSuffix}]
+{ProjectName}-{RoleName}-{Environment}-{Region}[-{CiSuffix}]
 ```
 
-Example: `myproject-cfn-bucket-123456789012-devl-us-east-1`
+Example: `myproject-lambda-executor-devl-us-east-1`
 
-This ensures:
+The `CiSuffix` is added only when it is non-empty (`HasCiSuffix` condition). This keeps role names unique across environments and CI runs.
 
-- Uniqueness across AWS accounts and regions
-- Environment isolation
-- Consistent naming for infrastructure automation
+### Managed Policy Naming Convention
 
-### Parameter-Driven Configuration
+Each managed policy has a fixed literal `ManagedPolicyName` (for example `S3ReadOnly`, `KMS`, `SSMParameterRead`). IAM requires managed policy names to be unique per account, so only one stack from this template can exist per account unless names are changed to include a prefix. Policy names are capped at 128 characters.
 
-Both templates accept parameters to support:
+### Enable-Flag Pattern
 
-- **Standalone mode**: Direct bucket name provided
-- **Integrated mode**: Bucket name constructed from project/environment parameters
+Every capability follows the same four-part pattern. Keep to it when adding or changing policies:
 
-The `s3-bucket-policy.yaml` template checks if `BucketName` is provided; if not, it constructs the name using the same parameters as the bucket template.
+1. **Parameter** `Enable<Name>Policy`: `Type: String`, `Default: 'false'`, `AllowedValues: ['true', 'false']`
+2. **Condition** `Create<Name>Policy`: `!Equals [!Ref Enable<Name>Policy, 'true']`
+3. **Resource** `<Name>Policy`: `AWS::IAM::ManagedPolicy` with `Condition`, `ManagedPolicyName`, `Roles: [!Ref IAMRole]`, and a `PolicyDocument`
+4. **Metadata group**: a `ParameterGroups` entry under `AWS::CloudFormation::Interface` listing the new parameter, so it shows under a labelled group in the console
+
+Resource ARNs come from `*Arn` parameters with wildcard defaults, or from `!Sub` with `${AWS::Partition}`, `${AWS::Region}`, `${AWS::AccountId}`, and `${ProjectName}`.
+
+### Current Policy Groups
+
+- **Data Pipeline:** S3 (read-only, write, read-write), Kinesis, DynamoDB (read-only, read-write), Glue, Athena
+- **AI/ML Services:** Textract, Polly, Lex, Rekognition
+- **Bedrock Knowledge Base:** RAG access (`BedrockAccessPolicy`)
+- **Bedrock Agent Core Policies:** `EnableBedrockAgentCorePolicy`. When enabled, the role also gets the AWS managed policies `AmazonBedrockFullAccess`, `BedrockAgentCoreFullAccess`, `CloudWatchLogsFullAccess`, and `AmazonEC2ContainerRegistryReadOnly` through `ManagedPolicyArns`
+- **SSM Parameter Store:** `SSMParameterRead`, read access to `/{ProjectName}` and `/{ProjectName}/*`
+- **Compute & Orchestration:** Lambda, Lambda basic execution, Step Functions, ECS, CodeBuild
+- **Integration & Messaging:** SQS, SNS, SES, EventBridge, API Gateway logging
+- **Security & Observability:** Secrets Manager, CloudWatch Logs, X-Ray, CloudTrail
+- **Cross-Account & Advanced:** Cross-account assume role, KMS, tagging
 
 ## Key Files to Understand
 
-### `templates/s3-bucket.yaml`
+### `cloudformation/template.yaml`
 
-**Purpose:** Creates an S3 bucket with security defaults
+**Purpose:** Creates an IAM role (`IAMRole`) and attaches conditional managed policies.
 
 **Key inputs:**
 
-- `ProjectName` (required): Project prefix
-- `BucketBaseName` (default: `cfn-bucket`): Base name component
-- `environment`: Environment label (devl, stag, prod)
-- `CiSuffix`: Optional suffix for CI/CD unique deployments
+- `ProjectName` (default `cfn-nested`): Name prefix, also the SSM parameter path
+- `RoleName` (default `iam-role`): Role name component
+- `Environment` (`devl`, `test`, `prod`): Environment label for naming and tags
+- `AssumeRolePrincipal`: Service allowed to assume the role
+- `CiSuffix`: Optional suffix for unique CI/CD deployments
+- `Enable*Policy` flags and `*Arn` resource pattern parameters
 
 **Key outputs:**
 
-- `S3BucketName`: Bucket name (exported for parent stack)
-- `S3BucketArn`: Bucket ARN
+- `RoleArn`, `RoleName`: Exported as `{Environment}-{RoleName}-Arn` and `{Environment}-{RoleName}-Name`
+- `AssumeRoleCommand`, `CloudFormationStackId`, `DeploymentInfo`
 
-**Features:**
+**Behavior notes:**
 
-- Versioning enabled by default
-- Public access blocking enabled (all 4 options)
-- Conditional naming: different bucket name with/without CI suffix
+- Template is `CAPABILITY_NAMED_IAM` because it creates named IAM resources
+- Parameter groups in `Metadata` must list every `Enable*` parameter, or it will not appear in the console grouping
 
-### `templates/s3-bucket-policy.yaml`
+### `cloudformation/parameters.json`
 
-**Purpose:** Applies an optional S3 bucket policy for encryption and transport security
+Parameter values for deployment. Update it when adding parameters that need a non-default value.
 
-**Key inputs:** Same as bucket template, plus `BucketName` (standalone mode)
+### `cloudformation/stack-config.json`
 
-**Behavior:**
-
-- If `BucketName` provided (non-empty), use it directly
-- Otherwise, construct name from ProjectName/BucketBaseName/environment/CiSuffix
-- Enforces S3 encryption on PutObject
-- Enforces HTTPS-only transport
+Stack name plus the template and parameter file paths (`templateFile`, `parameterFile`).
 
 ### `.github/workflows/ci.yaml`
 
 **Triggered on:**
 
-- Manual workflow_dispatch (anytime)
-- Pull requests (any branch)
+- Manual `workflow_dispatch`
 - Pushes to `feature/**` and `bug/**` branches
+- Pull requests to `main`
 
-**Path filter:** Only runs if changes to `templates/`, `parameters/`, or `.github/workflows/ci.yaml`
+**Path filter:** Runs only when `cloudformation/**` changes (and on changes to `ci.yaml` for pushes).
 
-**Phases:**
-
-1. **Validation:** `aws cloudformation validate-template` on both templates
-2. **Deployment:** Creates CloudFormation stacks in CI environment
-3. **Cleanup:** Destroys stacks (policy stack first, then bucket) for ephemeral testing
+**Config loading:** The `load-config` job reads `stack-config.json` to get the stack name, template file, and parameter file.
 
 **Environment setup:**
 
@@ -170,14 +166,6 @@ The `s3-bucket-policy.yaml` template checks if `BucketName` is provided; if not,
 
 **Triggered:** On push to main
 
-**Process:**
-
-1. Analyze commits (conventional format: `feat:`, `fix:`, `BREAKING CHANGE:`)
-2. Generate release notes
-3. Update CHANGELOG.md
-4. Create GitHub release and tag
-5. Commit version bump
-
 **Release rules:**
 
 - `feat:` → MINOR bump (0.1.0 → 0.2.0)
@@ -187,32 +175,25 @@ The `s3-bucket-policy.yaml` template checks if `BucketName` is provided; if not,
 
 ## Testing & Validation
 
-**Manual template validation:**
+Run these before committing template changes:
 
 ```bash
-aws cloudformation validate-template --template-body file://templates/s3-bucket.yaml
-aws cloudformation validate-template --template-body file://templates/s3-bucket-policy.yaml
+aws cloudformation validate-template --template-body file://cloudformation/template.yaml
+cfn-lint cloudformation/template.yaml
 ```
 
 **Manual stack deployment:**
 
 ```bash
-# Deploy bucket to dev environment
 aws cloudformation deploy \
-  --template-file templates/s3-bucket.yaml \
-  --stack-name my-stack-dev \
-  --parameter-overrides file://parameters/dev.json \
-  --region us-east-1
-
-# Deploy policy after bucket is created
-aws cloudformation deploy \
-  --template-file templates/s3-bucket-policy.yaml \
-  --stack-name my-policy-dev \
-  --parameter-overrides file://parameters/policy-dev.json \
+  --template-file cloudformation/template.yaml \
+  --stack-name my-lambda-role \
+  --parameter-overrides file://cloudformation/parameters.json \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1
 ```
 
-The CI workflow (ci.yaml) runs this full cycle automatically on PR, then cleans up.
+The CI workflow (`ci.yaml`) runs on pull requests that change `cloudformation/**`.
 
 ## AWS Credentials & Environment Variables
 
@@ -242,14 +223,26 @@ Commit types:
 
 Only commits to `main` trigger releases. Feature branches use this format but releases happen on merge to main.
 
-## When Modifying Templates
+## When Modifying the Template
 
-1. **Edit the template YAML** in `templates/`
-2. **Update parameter files** in `parameters/` if new parameters added
-3. **Test locally** with `aws cloudformation validate-template`
-4. **Create a PR** with conventional commit message (e.g., `feat: add encryption key parameter`)
-5. **CI validates and deploys** to dev environment automatically
-6. **Merge to main** → release workflow creates version tag and GitHub release
+### Adding a New Managed Policy
+
+1. Add the `Enable<Name>Policy` parameter under `Parameters`, following the enable-flag pattern
+2. Add the `Create<Name>Policy` condition under `Conditions`
+3. Add the `<Name>Policy` resource under `Resources` with `Condition`, `ManagedPolicyName`, `Roles`, and `PolicyDocument`
+4. Add the parameter to a `ParameterGroups` entry in `Metadata`
+5. Add the parameter to `cloudformation/parameters.json` if it needs a non-default value
+6. Update the matching section in `README.md`
+7. Validate with `aws cloudformation validate-template` and `cfn-lint`
+
+### Workflow
+
+1. **Edit** `cloudformation/template.yaml`
+2. **Update** `cloudformation/parameters.json` if new parameters need values
+3. **Validate** locally with `aws cloudformation validate-template` and `cfn-lint`
+4. **Create a PR** with a conventional commit message (e.g., `feat: add SSM parameter read policy`)
+5. **CI validates and deploys** automatically on pull requests
+6. **Merge to main** → release workflow creates the version tag and GitHub release
 
 ## Dev Container
 
@@ -263,4 +256,3 @@ Use via VS Code: `code --remote-container-url <repo-url>`
 ## Current Branch
 
 Main branch is the release branch. Feature work branches from here and merges back via PR. Branch naming follows: `{type}/CFN-{issue-number}-{slug}` (e.g., `feature/CFN-42-add-encryption`).
-

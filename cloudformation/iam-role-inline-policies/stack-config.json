@@ -1,5 +1,0 @@
-{
-  "stackName": "iam-role-inline-policy-nested-stack",
-  "templateFile": "cloudformation/iam-role-inline-policies/template.yaml",
-  "parameterFile": "cloudformation/iam-role-inline-policies/parameters.json"
-}

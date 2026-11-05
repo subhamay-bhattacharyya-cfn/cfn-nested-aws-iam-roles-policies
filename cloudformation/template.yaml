@@ -1,0 +1,1277 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Parameterized IAM Roles - Common AWS Use Cases'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Role Configuration"
+        Parameters:
+          - ProjectName
+          - RoleName
+          - Environment
+          - AssumeRolePrincipal
+          - CiSuffix
+      - Label:
+          default: "Data Pipeline Permissions"
+        Parameters:
+          - EnableS3ReadOnlyPolicy
+          - EnableS3WritePolicy
+          - EnableS3ReadWritePolicy
+          - EnableKinesisPolicy
+          - EnableDynamoDBReadOnlyPolicy
+          - EnableDynamoDBReadWritePolicy
+          - EnableGluePolicy
+          - EnableAthenaPolicy
+      - Label:
+          default: "AI/ML Services"
+        Parameters:
+          - EnableTextractPolicy
+          - EnablePollyPolicy
+          - EnableLexPolicy
+          - EnableRekognitionPolicy
+      - Label:
+          default: "Bedrock Knowledge Base"
+        Parameters:
+          - EnableBedrockRAGAccessPolicy
+          - BedrockKnowledgeBaseArn
+          - BedrockEmbeddingModelArn
+          - KnowledgeBaseCollectionArn
+      - Label:
+          default: "Bedrock Agent Core Policies"
+        Parameters:
+          - EnableBedrockAgentCorePolicy
+      - Label:
+          default: "SSM Parameter Store"
+        Parameters:
+          - EnableSSMParameterPolicy
+      - Label:
+          default: "Compute & Orchestration Permissions"
+        Parameters:
+          - EnableLambdaPolicy
+          - EnableLambdaBasicExecutionPolicy
+          - EnableStepFunctionsPolicy
+          - EnableECSPolicy
+          - EnableCodeBuildPolicy
+      - Label:
+          default: "Integration & Messaging"
+        Parameters:
+          - EnableSQSPolicy
+          - EnableSNSPolicy
+          - EnableSESPolicy
+          - EnableEventBridgePolicy
+          - EnableAPIGatewayPolicy
+      - Label:
+          default: "Security & Observability"
+        Parameters:
+          - EnableSecretsManagerPolicy
+          - EnableCloudWatchPolicy
+          - EnableXRayPolicy
+          - EnableCloudTrailPolicy
+      - Label:
+          default: "Cross-Account & Advanced"
+        Parameters:
+          - EnableCrossAccountAccess
+          - CrossAccountId
+          - EnableKMSPolicy
+          - EnableTagging
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: 'cfn-nested'
+    AllowedPattern: '^[a-zA-Z0-9-]{1,64}$'
+    Description: Project name used as prefix for role naming
+
+  RoleName:
+    Type: String
+    Default: 'iam-role'
+    AllowedPattern: '^[a-zA-Z0-9-]{1,64}$'
+    Description: Name of the IAM role
+
+  Environment:
+    Type: String
+    Default: devl
+    AllowedValues:
+      - devl
+      - test
+      - prod
+    Description: Environment for tagging and resource filtering
+
+  AssumeRolePrincipal:
+    Type: String
+    Default: lambda.amazonaws.com
+    AllowedValues:
+      - lambda.amazonaws.com
+      - ec2.amazonaws.com
+      - ecs-tasks.amazonaws.com
+      - states.amazonaws.com
+      - glue.amazonaws.com
+      - codebuild.amazonaws.com
+      - ssm.amazonaws.com
+      - events.amazonaws.com
+      - datapipeline.amazonaws.com
+      - bedrock-agentcore.amazonaws.com
+    Description: AWS service that can assume this role
+
+  CiSuffix:
+    Type: String
+    Default: ''
+    Description: Optional suffix for CI/CD deployments (e.g., for unique role identification in testing)
+
+  # Data Pipeline Policies
+  EnableS3ReadOnlyPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: S3 read-only access for data lakes
+
+  EnableS3WritePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: S3 write-only access for data lakes
+
+  EnableS3ReadWritePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: S3 read-write access for data lakes
+
+  EnableKinesisPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Kinesis data streams access (for real-time pipelines)
+
+  EnableDynamoDBReadOnlyPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: DynamoDB read-only access (GetItem, Query, Scan, BatchGetItem)
+
+  EnableDynamoDBReadWritePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: DynamoDB read-write access (full CRUD operations)
+
+  EnableGluePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: AWS Glue ETL job execution
+
+  EnableAthenaPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Athena query execution and result storage
+
+  # AI/ML Services
+  EnableTextractPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Textract document analysis access
+
+  EnablePollyPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Polly text-to-speech synthesis
+
+  EnableLexPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Lex conversational interfaces
+
+  EnableRekognitionPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon Rekognition image and video analysis
+
+  EnableBedrockRAGAccessPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Bedrock RAG (Retrieval-Augmented Generation) access (embedding model and OpenSearch Serverless)
+
+  EnableBedrockAgentCorePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Bedrock AgentCore access (agent runtime invocation, memory, events and workload identity tokens)
+
+  # SSM Parameter Store
+  EnableSSMParameterPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: SSM Parameter Store read access for parameters under the project name path (/<ProjectName>)
+
+  # Compute & Orchestration
+  EnableLambdaPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Lambda function invocation
+
+  EnableLambdaBasicExecutionPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: AWS Lambda Basic Execution Role - CloudWatch Logs permissions for Lambda functions
+
+  EnableStepFunctionsPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Step Functions state machine execution
+
+  EnableECSPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: ECS task management
+
+  EnableCodeBuildPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: CodeBuild project execution
+
+  # Integration & Messaging
+  EnableSQSPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: SQS queue operations
+
+  EnableSNSPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: SNS topic publish
+
+  EnableSESPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Amazon SES email sending and configuration
+
+  EnableEventBridgePolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: EventBridge rule and event target management
+
+  EnableAPIGatewayPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: API Gateway invocation logging
+
+  # Security & Observability
+  EnableSecretsManagerPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Secrets Manager secret retrieval
+
+  EnableCloudWatchPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: CloudWatch Logs and metrics
+
+  EnableXRayPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: AWS X-Ray tracing
+
+  EnableCloudTrailPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: CloudTrail log access
+
+  # Cross-Account & Advanced
+  EnableCrossAccountAccess:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Enable cross-account access
+
+  CrossAccountId:
+    Type: String
+    Default: ''
+    Description: Cross-account ID (required if EnableCrossAccountAccess is true)
+
+  EnableKMSPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: KMS key operations for encryption
+
+  EnableTagging:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Allow tagging of resources
+
+  S3BucketArn:
+    Type: String
+    Default: 'arn:aws:s3:::test-bucket-us-east-1'
+    Description: S3 bucket ARN(s) for policy (e.g., 'arn:aws:s3:::my-bucket' or 'arn:aws:s3:::my-bucket/*')
+
+  KinesisStreamArn:
+    Type: String
+    Default: 'arn:aws:kinesis:*:*:stream/*'
+    Description: Kinesis stream ARN pattern
+
+  DynamoDBTableArn:
+    Type: String
+    Default: 'arn:aws:dynamodb:*:*:table/*'
+    Description: DynamoDB table ARN pattern
+
+  GlueJobArn:
+    Type: String
+    Default: 'arn:aws:glue:*:*:job/*'
+    Description: Glue job ARN pattern
+
+  GlueCatalogArn:
+    Type: String
+    Default: 'arn:aws:glue:*:*:catalog'
+    Description: Glue catalog ARN
+
+  GlueDatabaseArn:
+    Type: String
+    Default: 'arn:aws:glue:*:*:database/*'
+    Description: Glue database ARN pattern
+
+  GlueTableArn:
+    Type: String
+    Default: 'arn:aws:glue:*:*:table/*/*'
+    Description: Glue table ARN pattern
+
+  AthenaWorkgroupArn:
+    Type: String
+    Default: 'arn:aws:athena:*:*:workgroup/*'
+    Description: Athena workgroup ARN pattern
+
+  AthenaQueryResultsArn:
+    Type: String
+    Default: 'arn:aws:s3:::aws-athena-query-results-*/*'
+    Description: S3 bucket ARN for Athena query results
+
+  LambdaFunctionName:
+    Type: String
+    Default: ''
+    Description: Lambda function name (used for naming and log group identification)
+
+  LambdaFunctionArn:
+    Type: String
+    Default: 'arn:aws:lambda:*:*:function/*'
+    Description: Lambda function ARN pattern
+
+  LambdaBasicExecutionLogGroupArn:
+    Type: String
+    Default: 'arn:aws:logs:*:*:log-group:/aws/lambda/*'
+    Description: CloudWatch log group ARN pattern for Lambda basic execution role
+
+  StepFunctionsStateMachineArn:
+    Type: String
+    Default: 'arn:aws:states:*:*:stateMachine:*'
+    Description: Step Functions state machine ARN pattern
+
+  StepFunctionsExecutionArn:
+    Type: String
+    Default: 'arn:aws:states:*:*:execution:*/*'
+    Description: Step Functions execution ARN pattern
+
+  ECSTaskArn:
+    Type: String
+    Default: 'arn:aws:ecs:*:*:task/*'
+    Description: ECS task ARN pattern
+
+  ECSTaskDefinitionArn:
+    Type: String
+    Default: 'arn:aws:ecs:*:*:task-definition/*'
+    Description: ECS task definition ARN pattern
+
+  IAMRoleArn:
+    Type: String
+    Default: 'arn:aws:iam::*:role/*'
+    Description: IAM role ARN pattern
+
+  CodeBuildProjectArn:
+    Type: String
+    Default: 'arn:aws:codebuild:*:*:project/*'
+    Description: CodeBuild project ARN pattern
+
+  SQSQueueArn:
+    Type: String
+    Default: 'arn:aws:sqs:*:*:*'
+    Description: SQS queue ARN pattern
+
+  SNSTopicArn:
+    Type: String
+    Default: 'arn:aws:sns:*:*:*'
+    Description: SNS topic ARN pattern
+
+  EventBridgeArn:
+    Type: String
+    Default: 'arn:aws:events:*:*:event-bus/default'
+    Description: EventBridge event bus ARN
+
+  SecretsManagerArn:
+    Type: String
+    Default: 'arn:aws:secretsmanager:*:*:secret:*'
+    Description: Secrets Manager secret ARN pattern
+
+  CloudWatchLogsArn:
+    Type: String
+    Default: 'arn:aws:logs:*:*:log-group:*'
+    Description: CloudWatch Logs ARN pattern
+
+  KMSKeyArn:
+    Type: String
+    Default: 'arn:aws:kms:*:*:key/*'
+    Description: KMS key ARN pattern
+
+  CrossAccountRoleArn:
+    Type: String
+    Default: 'arn:aws:iam::*:role/*'
+    AllowedPattern: '^(arn:.+|\\*)$'
+    Description: Cross-account IAM role ARN pattern (required if EnableCrossAccountAccess is true)
+
+  BedrockKnowledgeBaseArn:
+    Type: String
+    Default: 'arn:aws:bedrock:*:*:knowledge-base/*'
+    Description: Bedrock knowledge base ARN pattern
+
+  BedrockEmbeddingModelArn:
+    Type: String
+    Default: 'arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0'
+    Description: Bedrock embedding model ARN used by the knowledge base
+
+  KnowledgeBaseCollectionArn:
+    Type: String
+    Default: 'arn:aws:aoss:*:*:collection/*'
+    Description: OpenSearch Serverless collection ARN pattern
+
+Conditions:
+  HasCiSuffix: !Not [!Equals [!Ref CiSuffix, '']]
+  HasLambdaFunctionName: !Not [!Equals [!Ref LambdaFunctionName, '']]
+
+  # Data Pipeline
+  CreateS3ReadOnlyPolicy: !Equals [!Ref EnableS3ReadOnlyPolicy, 'true']
+  CreateS3WritePolicy: !Equals [!Ref EnableS3WritePolicy, 'true']
+  CreateS3ReadWritePolicy: !Equals [!Ref EnableS3ReadWritePolicy, 'true']
+  CreateKinesisPolicy: !Equals [!Ref EnableKinesisPolicy, 'true']
+  CreateDynamoDBReadOnlyPolicy: !Equals [!Ref EnableDynamoDBReadOnlyPolicy, 'true']
+  CreateDynamoDBReadWritePolicy: !Equals [!Ref EnableDynamoDBReadWritePolicy, 'true']
+  CreateGluePolicy: !Equals [!Ref EnableGluePolicy, 'true']
+  CreateAthenaPolicy: !Equals [!Ref EnableAthenaPolicy, 'true']
+
+  # AI/ML Services
+  CreateTextractPolicy: !Equals [!Ref EnableTextractPolicy, 'true']
+  CreatePollyPolicy: !Equals [!Ref EnablePollyPolicy, 'true']
+  CreateLexPolicy: !Equals [!Ref EnableLexPolicy, 'true']
+  CreateRekognitionPolicy: !Equals [!Ref EnableRekognitionPolicy, 'true']
+  CreateBedrockRAGAccessPolicy: !Equals [!Ref EnableBedrockRAGAccessPolicy, 'true']
+  CreateBedrockAgentCorePolicy: !Equals [!Ref EnableBedrockAgentCorePolicy, 'true']
+
+  # SSM Parameter Store
+  CreateSSMParameterPolicy: !Equals [!Ref EnableSSMParameterPolicy, 'true']
+
+  # Compute & Orchestration
+  CreateLambdaPolicy: !Equals [!Ref EnableLambdaPolicy, 'true']
+  CreateLambdaBasicExecutionPolicy: !Equals [!Ref EnableLambdaBasicExecutionPolicy, 'true']
+  CreateStepFunctionsPolicy: !Equals [!Ref EnableStepFunctionsPolicy, 'true']
+  CreateECSPolicy: !Equals [!Ref EnableECSPolicy, 'true']
+  CreateCodeBuildPolicy: !Equals [!Ref EnableCodeBuildPolicy, 'true']
+
+  # Integration & Messaging
+  CreateSQSPolicy: !Equals [!Ref EnableSQSPolicy, 'true']
+  CreateSNSPolicy: !Equals [!Ref EnableSNSPolicy, 'true']
+  CreateSESPolicy: !Equals [!Ref EnableSESPolicy, 'true']
+  CreateEventBridgePolicy: !Equals [!Ref EnableEventBridgePolicy, 'true']
+  CreateAPIGatewayPolicy: !Equals [!Ref EnableAPIGatewayPolicy, 'true']
+
+  # Security & Observability
+  CreateSecretsManagerPolicy: !Equals [!Ref EnableSecretsManagerPolicy, 'true']
+  CreateCloudWatchPolicy: !Equals [!Ref EnableCloudWatchPolicy, 'true']
+  CreateXRayPolicy: !Equals [!Ref EnableXRayPolicy, 'true']
+  CreateCloudTrailPolicy: !Equals [!Ref EnableCloudTrailPolicy, 'true']
+
+  # Cross-Account & Advanced
+  CreateCrossAccountAccess: !And
+    - !Equals [!Ref EnableCrossAccountAccess, 'true']
+    - !Not [!Equals [!Ref CrossAccountId, '']]
+  CreateKMSPolicy: !Equals [!Ref EnableKMSPolicy, 'true']
+  CreateTaggingPolicy: !Equals [!Ref EnableTagging, 'true']
+
+Resources:
+  IAMRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Provides parameterized IAM role with conditional managed policies for common AWS use cases including data pipelines, compute, orchestration, messaging, security, and observability
+        trust:
+          src: authored
+          conf: high
+        must:
+          - Supports multiple predefined role types with configurable permission sets
+          - Enables fine-grained policy control via enable/disable parameters
+          - Provides environment-based naming and tagging for resource organization
+    Properties:
+      RoleName: !If
+        - HasCiSuffix
+        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-${CiSuffix}'
+        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Ref AssumeRolePrincipal
+            Action: sts:AssumeRole
+      Description: !Sub 'Parameterized IAM role for ${Environment} environment - permissions controlled via parameters'
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: !If
+        - CreateBedrockAgentCorePolicy
+        - - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+          - arn:aws:iam::aws:policy/BedrockAgentCoreFullAccess
+          - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+          - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Principal
+          Value: !Ref AssumeRolePrincipal
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Project
+          Value: IAMRoles
+
+  # ============= DATA PIPELINE POLICIES =============
+  S3ReadOnlyPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateS3ReadOnlyPolicy
+    Properties:
+      ManagedPolicyName: S3ReadOnly
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3BucketOperations
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetBucketLocation
+              - s3:ListBucketVersions
+            Resource:
+              - !Ref S3BucketArn
+          - Sid: S3ObjectOperations
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource:
+              - !Sub '${S3BucketArn}/*'
+          - Sid: S3ListAllBuckets
+            Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+            Resource: '*'
+
+  S3WritePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateS3WritePolicy
+    Properties:
+      ManagedPolicyName: S3Write
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3WriteOperations
+            Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:PutObjectVersionTagging
+              - s3:DeleteObjectVersion
+            Resource:
+              - !Ref S3BucketArn
+          - Sid: S3ListBucket
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetBucketLocation
+              - s3:ListBucketVersions
+            Resource:
+              - !Ref S3BucketArn
+
+  S3ReadWritePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateS3ReadWritePolicy
+    Properties:
+      ManagedPolicyName: S3ReadWrite
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3ReadWriteOperations
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:GetBucketLocation
+              - s3:ListBucketVersions
+              - s3:GetObjectVersion
+              - s3:PutObjectVersionTagging
+              - s3:DeleteObjectVersion
+            Resource:
+              - !Ref S3BucketArn
+          - Sid: S3ListAllBuckets
+            Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+            Resource: '*'
+
+  KinesisStreamPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateKinesisPolicy
+    Properties:
+      ManagedPolicyName: KinesisStream
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - kinesis:PutRecord
+              - kinesis:PutRecords
+              - kinesis:GetRecords
+              - kinesis:GetShardIterator
+              - kinesis:DescribeStream
+              - kinesis:DescribeStreamSummary
+              - kinesis:ListStreams
+              - kinesis:ListShards
+            Resource: !Ref KinesisStreamArn
+
+  DynamoDBReadOnlyPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateDynamoDBReadOnlyPolicy
+    Properties:
+      ManagedPolicyName: DynamoDBReadOnly
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+            Resource:
+              - !Ref DynamoDBTableArn
+          - Effect: Allow
+            Action:
+              - dynamodb:ListTables
+            Resource: '*'
+
+  DynamoDBReadWritePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateDynamoDBReadWritePolicy
+    Properties:
+      ManagedPolicyName: DynamoDBReadWrite
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource:
+              - !Ref DynamoDBTableArn
+          - Effect: Allow
+            Action:
+              - dynamodb:ListTables
+            Resource: '*'
+
+  GlueETLPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateGluePolicy
+    Properties:
+      ManagedPolicyName: GlueETL
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - glue:StartJobRun
+              - glue:GetJobRun
+              - glue:GetJobRuns
+              - glue:GetJob
+            Resource:
+              - !Ref GlueJobArn
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetTable
+              - glue:GetPartitions
+            Resource:
+              - !Ref GlueCatalogArn
+              - !Ref GlueDatabaseArn
+              - !Ref GlueTableArn
+
+  AthenaQueryPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateAthenaPolicy
+    Properties:
+      ManagedPolicyName: AthenaQuery
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - athena:StartQueryExecution
+              - athena:GetQueryExecution
+              - athena:GetQueryResults
+              - athena:StopQueryExecution
+            Resource:
+              - !Ref AthenaWorkgroupArn
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Ref AthenaQueryResultsArn
+
+  # ============= AI/ML SERVICES POLICIES =============
+  TextractPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateTextractPolicy
+    Properties:
+      ManagedPolicyName: Textract
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - textract:AnalyzeDocument
+              - textract:DetectDocumentText
+              - textract:StartDocumentAnalysis
+              - textract:StartDocumentTextDetection
+              - textract:GetDocumentAnalysis
+              - textract:GetDocumentTextDetection
+            Resource: '*'
+
+  PollyPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreatePollyPolicy
+    Properties:
+      ManagedPolicyName: Polly
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - polly:SynthesizeSpeech
+              - polly:DescribeVoices
+              - polly:GetSpeechSynthesisTask
+              - polly:ListSpeechSynthesisTasks
+              - polly:StartSpeechSynthesisTask
+            Resource: '*'
+
+  LexPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateLexPolicy
+    Properties:
+      ManagedPolicyName: Lex
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - lex:PostText
+              - lex:PostContent
+              - lex:GetSession
+              - lex:PutSession
+              - lex:DeleteSession
+              - lex:RecognizeText
+              - lex:RecognizeUtterance
+              - lex:StartConversation
+            Resource: '*'
+
+  RekognitionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateRekognitionPolicy
+    Properties:
+      ManagedPolicyName: Rekognition
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - rekognition:DetectLabels
+              - rekognition:DetectFaces
+              - rekognition:DetectText
+              - rekognition:SearchFacesByImage
+              - rekognition:SearchFaces
+              - rekognition:CompareFaces
+              - rekognition:DetectModerationLabels
+              - rekognition:GetLabelDetection
+              - rekognition:GetFaceDetection
+              - rekognition:GetContentModeration
+              - rekognition:StartLabelDetection
+              - rekognition:StartFaceDetection
+              - rekognition:StartContentModeration
+            Resource: '*'
+
+  BedrockAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateBedrockRAGAccessPolicy
+    Properties:
+      ManagedPolicyName: BedrockRAGAccess
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: BedrockRAGAccess
+            Effect: Allow
+            Action:
+              - bedrock:CreateKnowledgeBase
+              - bedrock:Retrieve
+              - bedrock:RetrieveAndGenerate
+            Resource: !Ref BedrockKnowledgeBaseArn
+          - Sid: BedrockModelInvoke
+            Effect: Allow
+            Action:
+              - bedrock:InvokeModel
+            Resource: !Ref BedrockEmbeddingModelArn
+          - Sid: KnowledgeBaseCollectionAccess
+            Effect: Allow
+            Action:
+              - aoss:APIAccessAll
+            Resource: !Ref KnowledgeBaseCollectionArn
+          - Sid: PassRoleAccess
+            Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource: "*"
+
+  # ============= SSM PARAMETER STORE POLICIES =============
+  SSMParameterPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateSSMParameterPolicy
+    Properties:
+      ManagedPolicyName: SSMParameterRead
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: SSMReadConfig
+            Effect: Allow
+            Action:
+              - ssm:GetParametersByPath
+              - ssm:GetParameters
+              - ssm:GetParameter
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}'
+              - !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/*'
+
+  # ============= COMPUTE & ORCHESTRATION POLICIES =============
+  LambdaInvocationPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateLambdaPolicy
+    Properties:
+      ManagedPolicyName: LambdaInvocation
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+              - lambda:InvokeAsync
+            Resource: !Ref LambdaFunctionArn
+
+  LambdaBasicExecutionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateLambdaBasicExecutionPolicy
+    Properties:
+      ManagedPolicyName: LambdaBasicExecution
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              # - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !If
+              - HasLambdaFunctionName
+              - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*'
+              - !Sub '${LambdaBasicExecutionLogGroupArn}'
+
+  StepFunctionsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateStepFunctionsPolicy
+    Properties:
+      ManagedPolicyName: StepFunctions
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - states:StartExecution
+              - states:DescribeExecution
+              - states:DescribeStateMachine
+              - states:StopExecution
+            Resource:
+              - !Ref StepFunctionsStateMachineArn
+              - !Ref StepFunctionsExecutionArn
+
+  ECSTaskPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateECSPolicy
+    Properties:
+      ManagedPolicyName: ECSTask
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ecs:RunTask
+              - ecs:DescribeTasks
+              - ecs:StopTask
+            Resource:
+              - !Ref ECSTaskArn
+              - !Ref ECSTaskDefinitionArn
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource:
+              - !Ref IAMRoleArn
+
+  CodeBuildPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateCodeBuildPolicy
+    Properties:
+      ManagedPolicyName: CodeBuild
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+            Resource: !Ref CodeBuildProjectArn
+
+  # ============= INTEGRATION & MESSAGING POLICIES =============
+  SQSPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateSQSPolicy
+    Properties:
+      ManagedPolicyName: SQS
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:ChangeMessageVisibility
+              - sqs:GetQueueUrl
+            Resource: !Ref SQSQueueArn
+
+  SNSPublishPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateSNSPolicy
+    Properties:
+      ManagedPolicyName: SNSPublish
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource: !Ref SNSTopicArn
+
+  SESPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateSESPolicy
+    Properties:
+      ManagedPolicyName: SES
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+              - ses:SendTemplatedEmail
+              - ses:SendBulkTemplatedEmail
+              - ses:SendBounce
+              - ses:SendCustomVerificationEmail
+              - ses:GetSendStatistics
+              - ses:GetSendQuota
+              - ses:GetAccount
+              - ses:GetAccountSendingEnabled
+              - ses:ListVerifiedEmailAddresses
+              - ses:ListIdentities
+              - ses:ListEmailTemplates
+              - ses:GetEmailIdentity
+              - ses:GetTemplate
+              - ses:VerifyEmailIdentity
+              - ses:VerifyEmailAddress
+              - ses:DeleteVerifiedEmailAddress
+              - ses:GetIdentityNotificationAttributes
+              - ses:SetIdentityNotificationTopic
+              - ses:PutEmailIdentityFeedbackAttributes
+              - ses:PutEmailIdentityMailFromAttributes
+              - ses:PutConfigurationSetSendingOptions
+            Resource: '*'
+
+  EventBridgePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateEventBridgePolicy
+    Properties:
+      ManagedPolicyName: EventBridge
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - events:PutEvents
+            Resource: !Ref EventBridgeArn
+
+  APIGatewayLogsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateAPIGatewayPolicy
+    Properties:
+      ManagedPolicyName: APIGatewayLogs
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogDelivery
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+            Resource: '*'
+
+  # ============= SECURITY & OBSERVABILITY POLICIES =============
+  SecretsManagerPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateSecretsManagerPolicy
+    Properties:
+      ManagedPolicyName: SecretsManager
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:DescribeSecret
+            Resource: !Ref SecretsManagerArn
+
+  CloudWatchLogsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateCloudWatchPolicy
+    Properties:
+      ManagedPolicyName: CloudWatchLogs
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+              - logs:GetLogEvents
+              - logs:FilterLogEvents
+            Resource: !Ref CloudWatchLogsArn
+          - Effect: Allow
+            Action:
+              - cloudwatch:PutMetricData
+            Resource: '*'
+
+  XRayWritePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateXRayPolicy
+    Properties:
+      ManagedPolicyName: XRayWrite
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+            Resource: '*'
+
+  CloudTrailReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateCloudTrailPolicy
+    Properties:
+      ManagedPolicyName: CloudTrailRead
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - cloudtrail:LookupEvents
+            Resource: '*'
+
+  # ============= CROSS-ACCOUNT & ADVANCED POLICIES =============
+  CrossAccountAssumePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateCrossAccountAccess
+    Properties:
+      ManagedPolicyName: CrossAccountAssume
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource: !Ref CrossAccountRoleArn
+
+  KMSPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateKMSPolicy
+    Properties:
+      ManagedPolicyName: KMS
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+              - kms:GenerateDataKey
+            Resource: !Ref KMSKeyArn
+
+  TaggingPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateTaggingPolicy
+    Properties:
+      ManagedPolicyName: Tagging
+      Roles:
+        - !Ref IAMRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - tag:TagResources
+              - tag:UntagResources
+              - tag:GetResources
+            Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: ARN of the created IAM role
+    Value: !GetAtt IAMRole.Arn
+    Export:
+      Name: !Sub '${Environment}-${RoleName}-Arn'
+
+  RoleName:
+    Description: Name of the created IAM role
+    Value: !Ref IAMRole
+    Export:
+      Name: !Sub '${Environment}-${RoleName}-Name'
+
+  AssumeRoleCommand:
+    Description: AWS CLI command to assume this role
+    Value: !Sub |
+      aws sts assume-role \
+        --role-arn ${IAMRole.Arn} \
+        --role-session-name iam-session
+
+  CloudFormationStackId:
+    Description: CloudFormation stack ID
+    Value: !Ref AWS::StackId
+
+  DeploymentInfo:
+    Description: Deployment summary
+    Value: !Sub |
+      Role: ${IAMRole}
+      Environment: ${Environment}
+      Principal: ${AssumeRolePrincipal}
+      AssumeRoleCommand: aws sts assume-role --role-arn ${IAMRole.Arn} --role-session-name iam-session
