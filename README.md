@@ -1,4 +1,4 @@
-# CloudFormation Nested AWS IAM Roles Repository
+# CloudFormation Nested Stack Template : IAM Role with attached Managed and Inline policies
 
 <!-- Row 1: Status - Most Important -->
 [![Release](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/actions/workflows/release.yaml/badge.svg)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template)&nbsp;[![Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/issues)&nbsp;[![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-cfn/cloudformation-template)](https://github.com/subhamay-bhattacharyya-cfn/cloudformation-template/commits)

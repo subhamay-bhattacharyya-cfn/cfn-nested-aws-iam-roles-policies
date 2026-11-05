@@ -1,5 +1,6 @@
 {
   "RoleName": "lambda-role",
+  "EnableS3ReadOnlyPolicy": "true",
   "S3BucketArn": "arn:aws:s3:::myproject-cfn-bucket-123456789012-devl-us-east-1",
   "ProjectName": "cfn-nested",
   "Environment": "devl",
