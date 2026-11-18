@@ -939,7 +939,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateLambdaBasicExecutionPolicy
     Properties:
-      ManagedPolicyName: LambdaBasicExecution
+      ManagedPolicyName: CloudWatch
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -947,7 +947,6 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              # - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource: !If
