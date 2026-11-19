@@ -93,6 +93,7 @@ All flags accept `'true'` or `'false'` and default to `'false'`.
 - `EnableRekognitionPolicy` — Amazon Rekognition
 - `EnableBedrockRAGAccessPolicy` — Bedrock knowledge base retrieval and embedding model invocation
 - `EnableBedrockAgentCorePolicy` — Bedrock AgentCore runtime, memory, events, and workload identity tokens
+- `EnableBedrockPolicy` — Attaches the AWS managed policy `AmazonBedrockFullAccess` (skipped when `EnableBedrockAgentCorePolicy` is also `true`, since AgentCore already attaches it)
 
 **SSM Parameter Store:**
 

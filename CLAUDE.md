@@ -104,6 +104,7 @@ Resource ARNs come from `*Arn` parameters with wildcard defaults, or from `!Sub`
 - **Data Pipeline:** S3 (read-only, write, read-write), Kinesis, DynamoDB (read-only, read-write), Glue, Athena
 - **AI/ML Services:** Textract, Polly, Lex, Rekognition
 - **Bedrock Knowledge Base:** RAG access (`BedrockAccessPolicy`)
+- **Bedrock Full Access:** `EnableBedrockPolicy` attaches the AWS managed policy `AmazonBedrockFullAccess` through `ManagedPolicyArns`. It is not a separate `ManagedPolicy` resource, and it is skipped when AgentCore is enabled, since AgentCore already attaches that policy
 - **Bedrock Agent Core Policies:** `EnableBedrockAgentCorePolicy`. When enabled, the role also gets the AWS managed policies `AmazonBedrockFullAccess`, `BedrockAgentCoreFullAccess`, `CloudWatchLogsFullAccess`, and `AmazonEC2ContainerRegistryReadOnly` through `ManagedPolicyArns`
 - **SSM Parameter Store:** `SSMParameterRead`, read access to `/{ProjectName}` and `/{ProjectName}/*`
 - **Compute & Orchestration:** Lambda, Lambda basic execution, Step Functions, ECS, CodeBuild

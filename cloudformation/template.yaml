@@ -42,6 +42,10 @@ Metadata:
         Parameters:
           - EnableBedrockAgentCorePolicy
       - Label:
+          default: "Bedrock Full Access"
+        Parameters:
+          - EnableBedrockPolicy
+      - Label:
           default: "SSM Parameter Store"
         Parameters:
           - EnableSSMParameterPolicy
@@ -204,6 +208,12 @@ Parameters:
     Default: 'false'
     AllowedValues: ['true', 'false']
     Description: Bedrock AgentCore access (agent runtime invocation, memory, events and workload identity tokens)
+
+  EnableBedrockPolicy:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Attach the AWS managed policy AmazonBedrockFullAccess to the role
 
   # SSM Parameter Store
   EnableSSMParameterPolicy:
@@ -485,6 +495,7 @@ Conditions:
   CreateRekognitionPolicy: !Equals [!Ref EnableRekognitionPolicy, 'true']
   CreateBedrockRAGAccessPolicy: !Equals [!Ref EnableBedrockRAGAccessPolicy, 'true']
   CreateBedrockAgentCorePolicy: !Equals [!Ref EnableBedrockAgentCorePolicy, 'true']
+  CreateBedrockPolicy: !Equals [!Ref EnableBedrockPolicy, 'true']
 
   # SSM Parameter Store
   CreateSSMParameterPolicy: !Equals [!Ref EnableSSMParameterPolicy, 'true']
@@ -543,13 +554,18 @@ Resources:
             Action: sts:AssumeRole
       Description: !Sub 'Parameterized IAM role for ${Environment} environment - permissions controlled via parameters'
       MaxSessionDuration: 3600
+      # AgentCore already attaches AmazonBedrockFullAccess, so the Bedrock-only
+      # branch is used only when AgentCore is off; this avoids a duplicate attachment.
       ManagedPolicyArns: !If
         - CreateBedrockAgentCorePolicy
         - - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
           - arn:aws:iam::aws:policy/BedrockAgentCoreFullAccess
           - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
           - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - !Ref AWS::NoValue
+        - !If
+          - CreateBedrockPolicy
+          - - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+          - !Ref AWS::NoValue
       Tags:
         - Key: Environment
           Value: !Ref Environment
