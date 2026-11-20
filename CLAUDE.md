@@ -86,7 +86,7 @@ The `CiSuffix` is added only when it is non-empty (`HasCiSuffix` condition). Thi
 
 ### Managed Policy Naming Convention
 
-Each managed policy name is scoped to its role, using the same prefix as the role name plus the policy name, and `CiSuffix` when set: `{ProjectName}-{RoleName}-{Environment}-{Region}-{PolicyName}[-{CiSuffix}]`. This is required because IAM managed policy names are unique per account. A literal name such as `KMS` collides with the same name on any other role in the account. Names are capped at 128 characters.
+Each managed policy name is `{PolicyName}-{StackIdSegment}`, where `StackIdSegment` is the first 8 characters of the UUID in `AWS::StackId`, built with `!Join` and `!Select`/`!Split`. IAM managed policy names are unique per account, so a literal name such as `KMS` collides with the same name on any other role. The segment is stable across stack updates and unique per stack. CloudFormation has no MD5 function, so a hash isn't used.
 
 ### Enable-Flag Pattern
 

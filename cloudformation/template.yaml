@@ -581,10 +581,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateS3ReadOnlyPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3ReadOnly-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3ReadOnly'
+      ManagedPolicyName: !Join ['-', ['S3ReadOnly', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -615,10 +612,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateS3WritePolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3Write-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3Write'
+      ManagedPolicyName: !Join ['-', ['S3Write', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -646,10 +640,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateS3ReadWritePolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3ReadWrite-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-S3ReadWrite'
+      ManagedPolicyName: !Join ['-', ['S3ReadWrite', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -679,10 +670,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateKinesisPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-KinesisStream-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-KinesisStream'
+      ManagedPolicyName: !Join ['-', ['KinesisStream', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -704,10 +692,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateDynamoDBReadOnlyPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-DynamoDBReadOnly-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-DynamoDBReadOnly'
+      ManagedPolicyName: !Join ['-', ['DynamoDBReadOnly', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -730,10 +715,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateDynamoDBReadWritePolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-DynamoDBReadWrite-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-DynamoDBReadWrite'
+      ManagedPolicyName: !Join ['-', ['DynamoDBReadWrite', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -760,10 +742,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateGluePolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-GlueETL-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-GlueETL'
+      ManagedPolicyName: !Join ['-', ['GlueETL', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -791,10 +770,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateAthenaPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-AthenaQuery-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-AthenaQuery'
+      ManagedPolicyName: !Join ['-', ['AthenaQuery', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -820,10 +796,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateTextractPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Textract-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Textract'
+      ManagedPolicyName: !Join ['-', ['Textract', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -843,10 +816,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreatePollyPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Polly-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Polly'
+      ManagedPolicyName: !Join ['-', ['Polly', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -865,10 +835,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateLexPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Lex-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Lex'
+      ManagedPolicyName: !Join ['-', ['Lex', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -890,10 +857,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateRekognitionPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Rekognition-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Rekognition'
+      ManagedPolicyName: !Join ['-', ['Rekognition', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -920,10 +884,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateBedrockRAGAccessPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-BedrockRAGAccess-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-BedrockRAGAccess'
+      ManagedPolicyName: !Join ['-', ['BedrockRAGAccess', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -957,10 +918,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateSSMParameterPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SSMParameterRead-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SSMParameterRead'
+      ManagedPolicyName: !Join ['-', ['SSMParameterRead', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -981,10 +939,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateLambdaPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-LambdaInvocation-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-LambdaInvocation'
+      ManagedPolicyName: !Join ['-', ['LambdaInvocation', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1000,10 +955,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateLambdaBasicExecutionPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudWatch-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudWatch'
+      ManagedPolicyName: !Join ['-', ['CloudWatch', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1022,10 +974,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateStepFunctionsPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-StepFunctions-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-StepFunctions'
+      ManagedPolicyName: !Join ['-', ['StepFunctions', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1045,10 +994,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateECSPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-ECSTask-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-ECSTask'
+      ManagedPolicyName: !Join ['-', ['ECSTask', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1072,10 +1018,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateCodeBuildPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CodeBuild-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CodeBuild'
+      ManagedPolicyName: !Join ['-', ['CodeBuild', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1092,10 +1035,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateSQSPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SQS-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SQS'
+      ManagedPolicyName: !Join ['-', ['SQS', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1115,10 +1055,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateSNSPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SNSPublish-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SNSPublish'
+      ManagedPolicyName: !Join ['-', ['SNSPublish', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1133,10 +1070,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateSESPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SES-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SES'
+      ManagedPolicyName: !Join ['-', ['SES', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1173,10 +1107,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateEventBridgePolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-EventBridge-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-EventBridge'
+      ManagedPolicyName: !Join ['-', ['EventBridge', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1191,10 +1122,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateAPIGatewayPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-APIGatewayLogs-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-APIGatewayLogs'
+      ManagedPolicyName: !Join ['-', ['APIGatewayLogs', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1214,10 +1142,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateSecretsManagerPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SecretsManager-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-SecretsManager'
+      ManagedPolicyName: !Join ['-', ['SecretsManager', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1233,10 +1158,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateCloudWatchPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudWatchLogs-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudWatchLogs'
+      ManagedPolicyName: !Join ['-', ['CloudWatchLogs', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1260,10 +1182,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateXRayPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-XRayWrite-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-XRayWrite'
+      ManagedPolicyName: !Join ['-', ['XRayWrite', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1279,10 +1198,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateCloudTrailPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudTrailRead-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CloudTrailRead'
+      ManagedPolicyName: !Join ['-', ['CloudTrailRead', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1298,10 +1214,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateCrossAccountAccess
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CrossAccountAssume-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-CrossAccountAssume'
+      ManagedPolicyName: !Join ['-', ['CrossAccountAssume', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1316,10 +1229,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateKMSPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-KMS-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-KMS'
+      ManagedPolicyName: !Join ['-', ['KMS', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:
@@ -1336,10 +1246,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateTaggingPolicy
     Properties:
-      ManagedPolicyName: !If
-        - HasCiSuffix
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Tagging-${CiSuffix}'
-        - !Sub '${ProjectName}-${RoleName}-${Environment}-${AWS::Region}-Tagging'
+      ManagedPolicyName: !Join ['-', ['Tagging', !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
       Roles:
         - !Ref IAMRole
       PolicyDocument:

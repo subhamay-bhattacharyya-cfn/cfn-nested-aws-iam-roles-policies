@@ -151,15 +151,15 @@ All flags accept `'true'` or `'false'` and default to `'false'`.
 
 ## Managed Policy Names
 
-Each managed policy is named after its role and capability, using the same prefix as the role:
+Each managed policy name is the policy's name followed by an 8-character segment taken from the nested stack's ID:
 
 ```bash
-{ProjectName}-{RoleName}-{Environment}-{Region}-{PolicyName}[-{CiSuffix}]
+{PolicyName}-{StackIdSegment}
 ```
 
-Example: `myproject-lambda-executor-devl-us-east-1-KMS`
+Example: `KMS-3f9a1c2e`
 
-IAM managed policy names must be unique within the AWS account, so this scoping lets several roles from this template coexist. The full name must stay within 128 characters, so keep `ProjectName` and `RoleName` short. Changing these inputs renames the policies, which replaces them.
+The segment is the first 8 characters of the UUID in `AWS::StackId`. It is fixed for the life of the stack, so updates don't rename the policies. It differs for each stack, so several roles from this template can coexist in one account. Deleting and recreating the stack changes the segment.
 
 ## Outputs
 
