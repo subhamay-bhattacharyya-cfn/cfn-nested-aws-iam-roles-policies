@@ -86,7 +86,7 @@ The `CiSuffix` is added only when it is non-empty (`HasCiSuffix` condition). Thi
 
 ### Managed Policy Naming Convention
 
-Each managed policy has a fixed literal `ManagedPolicyName` (for example `S3ReadOnly`, `KMS`, `SSMParameterRead`). IAM requires managed policy names to be unique per account, so only one stack from this template can exist per account unless names are changed to include a prefix. Policy names are capped at 128 characters.
+Each managed policy name is scoped to its role, using the same prefix as the role name plus the policy name, and `CiSuffix` when set: `{ProjectName}-{RoleName}-{Environment}-{Region}-{PolicyName}[-{CiSuffix}]`. This is required because IAM managed policy names are unique per account. A literal name such as `KMS` collides with the same name on any other role in the account. Names are capped at 128 characters.
 
 ### Enable-Flag Pattern
 

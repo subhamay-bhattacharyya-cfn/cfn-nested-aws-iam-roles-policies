@@ -151,7 +151,15 @@ All flags accept `'true'` or `'false'` and default to `'false'`.
 
 ## Managed Policy Names
 
-Each managed policy has a fixed `ManagedPolicyName`, for example `S3ReadOnly`, `KMS`, or `SSMParameterRead`. Because these names are literal, IAM requires them to be unique within the AWS account. Deploy only one stack from this template per account, or add a prefix before deploying a second copy.
+Each managed policy is named after its role and capability, using the same prefix as the role:
+
+```bash
+{ProjectName}-{RoleName}-{Environment}-{Region}-{PolicyName}[-{CiSuffix}]
+```
+
+Example: `myproject-lambda-executor-devl-us-east-1-KMS`
+
+IAM managed policy names must be unique within the AWS account, so this scoping lets several roles from this template coexist. The full name must stay within 128 characters, so keep `ProjectName` and `RoleName` short. Changing these inputs renames the policies, which replaces them.
 
 ## Outputs
 
